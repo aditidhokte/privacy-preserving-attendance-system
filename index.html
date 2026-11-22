@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy-Preserving Attendance System</title>
+
+<style>
+* {
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    margin: 0;
+    background: #f2f5fa;
+    color: #222;
+}
+
+header {
+    background: #173b70;
+    color: white;
+    text-align: center;
+    padding: 22px;
+}
+
+header h1 {
+    margin: 0;
+}
+
+header p {
+    margin-bottom: 0;
+}
+
+.container {
+    width: 92%;
+    max-width: 1150px;
+    margin: 25px auto;
+}
+
+.section {
+    background: white;
+    padding: 20px;
+    margin-bottom: 22px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px #00000012;
+}
+
+h2 {
+    color: #173b70;
+    margin-top: 0;
+}
+
+input, select {
+    padding: 11px;
+    margin: 6px 4px 6px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    color: white;
+    margin: 4px;
+}
+
+button:hover {
+    opacity: 0.85;
+}
+
+.add-btn {
+    background: #173b70;
+}
+
+.present-btn {
+    background: #168b50;
+}
+
+.absent-btn {
+    background: #d93636;
+}
+
+.delete-btn {
+    background: #555;
+}
+
+.report-btn {
+    background: #173b70;
+}
+
+.csv-btn {
+    background: #168b50;
+}
+
+.print-btn {
+    background: #6c48a5;
+}
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
+}
+
+.card {
+    padding: 20px;
+    border-radius: 8px;
+    color: white;
+    text-align: center;
+    background: #2764a5;
+}
+
+.card h3 {
+    margin: 0 0 10px;
+}
+
+.card p {
+    font-size: 26px;
+    font-weight: bold;
+    margin: 0;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    min-width: 650px;
+}
+
+th, td {
+    padding: 12px;
+    border: 1px solid #ddd;
+    text-align: center;
+}
+
+th {
+    background: #173b70;
+    color: white;
+}
+
+tr:nth-child(even) {
+    background: #f5f7fa;
+}
+
+.table-container {
+    overflow-x: auto;
+}
+
+.present-text {
+    color: green;
+    font-weight: bold;
+}
+
+.absent-text {
+    color: red;
+    font-weight: bold;
+}
+
+footer {
+    text-align: center;
+    padding: 18px;
+    background: #173b70;
+    color: white;
+    margin-top: 30px;
+}
+
+.report-summary {
+    margin-top: 15px;
+    margin-bottom: 15px;
+}
+
+@media print {
+    body {
+        background: white;
+    }
+
+    header, footer, .no-print,
+    .section:not(.report-section) {
+        display: none !important;
+    }
+
+    .container {
+        width: 100%;
+        margin: 0;
+    }
+
+    .section {
+        box-shadow: none;
+    }
+
+    .table-container {
+        overflow: visible;
+    }
+
+    table {
+        min-width: 100%;
+        font-size: 11px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>Privacy-Preserving Attendance System</h1>
+    <p>Student Attendance Management Website</p>
+</header>
+
+<div class="container">
+
+    <!-- DASHBOARD -->
+    <div class="section">
+        <h2>Attendance Dashboard</h2>
+
+        <div class="cards">
+            <div class="card">
+                <h3>Total Students</h3>
+                <p id="totalStudents">0</p>
+            </div>
+
+            <div class="card">
+                <h3>Present Today</h3>
+                <p id="presentToday">0</p>
+            </div>
+
+            <div class="card">
+                <h3>Absent Today</h3>
+                <p id="absentToday">0</p>
+            </div>
+
+            <div class="card">
+                <h3>Attendance %</h3>
+                <p id="attendancePercent">0%</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD STUDENT -->
+    <div class="section no-print">
+        <h2>Add Student Details</h2>
+
+        <form id="studentForm">
+            <input type="text" id="studentName"
+                   placeholder="Enter Student Name" required>
+
+            <input type="text" id="studentPRN"
+                   placeholder="Enter PRN Number" required>
+
+            <input type="text" id="studentDivision"
+                   placeholder="Enter Division" required>
+
+            <button type="submit" class="add-btn">
+                Add Student
+            </button>
+        </form>
+    </div>
+
+    <!-- MARK ATTENDANCE -->
+    <div class="section">
+        <h2>Mark Attendance</h2>
+
+        <div class="no-print">
+            <label>Select Date:</label>
+            <input type="date" id="attendanceDate">
+
+            <input type="text" id="studentSearch"
+                   placeholder="Search by Name or PRN">
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Sr. No.</th>
+                        <th>Student Name</th>
+                        <th>PRN</th>
+                        <th>Division</th>
+                        <th>Attendance</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody id="studentTable"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ATTENDANCE REPORT -->
+    <div class="section report-section">
+        <h2>Attendance Reports</h2>
+
+        <div class="no-print">
+            <label>Select Report Date:</label>
+            <input type="date" id="reportDate">
+
+            <input type="text" id="reportSearch"
+                   placeholder="Search Student Name or PRN">
+
+            <button class="report-btn" onclick="generateReport()">
+                Generate Report
+            </button>
+
+            <button class="csv-btn" onclick="downloadReport()">
+                Download CSV
+            </button>
+
+            <button class="print-btn" onclick="printReport()">
+                Print Report
+            </button>
+        </div>
+
+        <div class="cards report-summary">
+            <div class="card">
+                <h3>Total Students</h3>
+                <p id="reportTotal">0</p>
+            </div>
+
+            <div class="card">
+                <h3>Present</h3>
+                <p id="reportPresent">0</p>
+            </div>
+
+            <div class="card">
+                <h3>Absent</h3>
+                <p id="reportAbsent">0</p>
+            </div>
+
+            <div class="card">
+                <h3>Attendance %</h3>
+                <p id="reportPercentage">0%</p>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="reportTable">
+                <thead>
+                    <tr>
+                        <th>Sr. No.</th>
+                        <th>Student Name</th>
+                        <th>PRN</th>
+                        <th>Division</th>
+                        <th>Present Days</th>
+                        <th>Absent Days</th>
+                        <th>Attendance %</th>
+                        <th>Status on Selected Date</th>
+                    </tr>
+                </thead>
+
+                <tbody id="reportTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<footer>
+    <p>Privacy-Preserving Attendance System | Student Project</p>
+</footer>
+
+<script>
+
+// GET SAVED DATA
+let students = JSON.parse(
+    localStorage.getItem("attendanceStudents")
+) || [];
+
+let attendanceRecords = JSON.parse(
+    localStorage.getItem("attendanceRecords")
+) || {};
+
+// TODAY'S DATE
+function getToday() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+}
+
+// SAVE DATA
+function saveData() {
+    localStorage.setItem(
+        "attendanceStudents",
+        JSON.stringify(students)
+    );
+
+    localStorage.setItem(
+        "attendanceRecords",
+        JSON.stringify(attendanceRecords)
+    );
+}
+
+// INITIAL DATE
+document.getElementById("attendanceDate").value = getToday();
+document.getElementById("reportDate").value = getToday();
+
+// ADD STUDENT
+document.getElementById("studentForm").addEventListener(
+    "submit",
+    function(event) {
+
+        event.preventDefault();
+
+        const name = document.getElementById("studentName").value.trim();
+        const prn = document.getElementById("studentPRN").value.trim();
+        const division = document.getElementById("studentDivision").value.trim();
+
+        if (!name || !prn || !division) {
+            alert("Please fill all student details.");
+            return;
+        }
+
+        const duplicate = students.some(
+            student => student.prn.toLowerCase() === prn.toLowerCase()
+        );
+
+        if (duplicate) {
+            alert("This PRN number already exists!");
+            return;
+        }
+
+        students.push({
+            name: name,
+            prn: prn,
+            division: division
+        });
+
+        saveData();
+
+        document.getElementById("studentForm").reset();
+
+        render();
+        generateReport();
+
+        alert("Student added successfully!");
+    }
+);
+
+// MARK ATTENDANCE
+function markAttendance(prn, status) {
+
+    const date = document.getElementById("attendanceDate").value;
+
+    if (!date) {
+        alert("Please select a date.");
+        return;
+    }
+
+    if (!attendanceRecords[date]) {
+        attendanceRecords[date] = {};
+    }
+
+    attendanceRecords[date][prn] = status;
+
+    saveData();
+
+    render();
+    generateReport();
+}
+
+// DELETE STUDENT
+function deleteStudent(prn) {
+
+    if (!confirm("Are you sure you want to delete this student?")) {
+        return;
+    }
+
+    students = students.filter(
+        student => student.prn !== prn
+    );
+
+    // Remove student's attendance records
+    Object.keys(attendanceRecords).forEach(date => {
+        delete attendanceRecords[date][prn];
+    });
+
+    saveData();
+
+    render();
+    generateReport();
+}
+
+// GET STUDENT ATTENDANCE PERCENTAGE
+function getStudentPercentage(prn) {
+
+    let present = 0;
+    let total = 0;
+
+    Object.keys(attendanceRecords).forEach(date => {
+
+        if (attendanceRecords[date][prn]) {
+
+            total++;
+
+            if (attendanceRecords[date][prn] === "Present") {
+                present++;
+            }
+        }
+    });
+
+    if (total === 0) {
+        return 0;
+    }
+
+    return Math.round((present / total) * 100);
+}
+
+// DISPLAY STUDENTS AND DASHBOARD
+function render() {
+
+    const date = document.getElementById("attendanceDate").value;
+
+    const table = document.getElementById("studentTable");
+
+    const search = document.getElementById("studentSearch")
+        .value.toLowerCase();
+
+    table.innerHTML = "";
+
+    let present = 0;
+    let absent = 0;
+
+    const filteredStudents = students.filter(student =>
+        student.name.toLowerCase().includes(search) ||
+        student.prn.toLowerCase().includes(search)
+    );
+
+    filteredStudents.forEach((student, index) => {
+
+        const status = attendanceRecords[date]?.[student.prn] || "Not Marked";
+
+        if (status === "Present") {
+            present++;
+        }
+
+        if (status === "Absent") {
+            absent++;
+        }
+
+        const statusClass =
+            status === "Present" ? "present-text" :
+            status === "Absent" ? "absent-text" : "";
+
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+            <td>${index + 1}</td>
+
+            <td>${escapeHTML(student.name)}</td>
+
+            <td>${escapeHTML(student.prn)}</td>
+
+            <td>${escapeHTML(student.division)}</td>
+
+            <td class="${statusClass}">${status}</td>
+
+            <td class="no-print">
+                <button class="present-btn"
+                    onclick="markAttendance('${escapeJS(student.prn)}','Present')">
+                    Present
+                </button>
+
+                <button class="absent-btn"
+                    onclick="markAttendance('${escapeJS(student.prn)}','Absent')">
+                    Absent
+                </button>
+
+                <button class="delete-btn"
+                    onclick="deleteStudent('${escapeJS(student.prn)}')">
+                    Delete
+                </button>
+            </td>
+        `;
+
+        table.appendChild(row);
+    });
+
+    document.getElementById("totalStudents").textContent = students.length;
+    document.getElementById("presentToday").textContent = present;
+    document.getElementById("absentToday").textContent = absent;
+
+    const marked = present + absent;
+
+    const percentage = marked === 0
+        ? 0
+        : Math.round((present / marked) * 100);
+
+    document.getElementById("attendancePercent").textContent =
+        percentage + "%";
+}
+
+// PREVENT HTML INJECTION
+function escapeHTML(value) {
+    return String(value).replace(/[&<>"']/g, function(char) {
+        return {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+        }[char];
+    });
+}
+
+function escapeJS(value) {
+    return String(value)
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, "\\n")
+        .replace(/\r/g, "\\r");
+}
+
+// GENERATE ATTENDANCE REPORT
+function generateReport() {
+
+    const selectedDate = document.getElementById("reportDate").value;
+
+    const search = document.getElementById("reportSearch")
+        .value.toLowerCase();
+
+    const table = document.getElementById("reportTableBody");
+
+    table.innerHTML = "";
+
+    let presentOnDate = 0;
+    let absentOnDate = 0;
+
+    const filteredStudents = students.filter(student =>
+        student.name.toLowerCase().includes(search) ||
+        student.prn.toLowerCase().includes(search)
+    );
+
+    filteredStudents.forEach((student, index) => {
+
+        let presentDays = 0;
+        let absentDays = 0;
+
+        Object.keys(attendanceRecords).forEach(date => {
+
+            const status = attendanceRecords[date][student.prn];
+
+            if (status === "Present") {
+                presentDays++;
+            }
+
+            if (status === "Absent") {
+                absentDays++;
+            }
+        });
+
+        const totalDays = presentDays + absentDays;
+
+        const percentage = totalDays === 0
+            ? 0
+            : Math.round((presentDays / totalDays) * 100);
+
+        const selectedStatus =
+            attendanceRecords[selectedDate]?.[student.prn] || "Not Marked";
+
+        if (selectedStatus === "Present") {
+            presentOnDate++;
+        }
+
+        if (selectedStatus === "Absent") {
+            absentOnDate++;
+        }
+
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${escapeHTML(student.name)}</td>
+            <td>${escapeHTML(student.prn)}</td>
+            <td>${escapeHTML(student.division)}</td>
+            <td>${presentDays}</td>
+            <td>${absentDays}</td>
+            <td>${percentage}%</td>
+            <td>${selectedStatus}</td>
+        `;
+
+        table.appendChild(row);
+    });
+
+    const marked = presentOnDate + absentOnDate;
+
+    const dailyPercentage = marked === 0
+        ? 0
+        : Math.round((presentOnDate / marked) * 100);
+
+    document.getElementById("reportTotal").textContent =
+        filteredStudents.length;
+
+    document.getElementById("reportPresent").textContent =
+        presentOnDate;
+
+    document.getElementById("reportAbsent").textContent =
+        absentOnDate;
+
+    document.getElementById("reportPercentage").textContent =
+        dailyPercentage + "%";
+}
+
+// DOWNLOAD CSV REPORT
+function downloadReport() {
+
+    generateReport();
+
+    const rows = [];
+
+    const headers = [
+        "Sr. No.",
+        "Student Name",
+        "PRN",
+        "Division",
+        "Present Days",
+        "Absent Days",
+        "Attendance %",
+        "Status on Selected Date"
+    ];
+
+    rows.push(headers);
+
+    const tableRows = document.querySelectorAll(
+        "#reportTableBody tr"
+    );
+
+    tableRows.forEach(row => {
+
+        const cells = Array.from(row.querySelectorAll("td"));
+
+        rows.push(cells.map(cell => cell.innerText));
+    });
+
+    const csvContent = rows.map(row =>
+        row.map(value =>
+            '"' + String(value).replace(/"/g, '""') + '"'
+        ).join(",")
+    ).join("\n");
+
+    const blob = new Blob(
+        ["\uFEFF" + csvContent],
+        { type: "text/csv;charset=utf-8;" }
+    );
+
+    const link = document.createElement("a");
+
+    const url = URL.createObjectURL(blob);
+
+    link.href = url;
+    link.download = "Attendance_Report.csv";
+
+    document.body.appendChild(link);
+    link.click();
+
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+// PRINT REPORT
+function printReport() {
+    generateReport();
+    window.print();
+}
+
+// DATE CHANGE
+document.getElementById("attendanceDate").addEventListener(
+    "change",
+    function() {
+        render();
+    }
+);
+
+// SEARCH STUDENTS
+document.getElementById("studentSearch").addEventListener(
+    "input",
+    function() {
+        render();
+    }
+);
+
+// REPORT SEARCH
+document.getElementById("reportSearch").addEventListener(
+    "input",
+    function() {
+        generateReport();
+    }
+);
+
+// REPORT DATE CHANGE
+document.getElementById("reportDate").addEventListener(
+    "change",
+    function() {
+        generateReport();
+    }
+);
+
+// INITIAL DISPLAY
+render();
+generateReport();
+
+</script>
+
+</body>
+</html>
